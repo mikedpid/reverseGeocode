@@ -15,17 +15,18 @@ let retrieveMapsData = function (long, lat) {
             if (!res.json.length) {
                 getMapsData(long, lat).then((mapsData) => {
                     const results = mapsData.json.results[0]
-                    let address = {}
-                    address.formatted = results.formatted_address
-                    results.address_components.forEach(function (component) {
-                        address[component.types[0]] = { 'short_name': component.short_name, 'long_name': component.long_name }
-                    })
-
+                    return results
+                }).then((results) => {
                     getRoadSpeedLimit(results.place_id).then((roadData) => {
-                        let obj = { address: address, coordinates: [long, lat], country: address['country'].long_name, speed_limit: '0', updated_at: new Date()}
-                        if(roadData.json.speedLimits) { 
-                            let speedLimit = roadData.json.speedLimits[0].speedLimit
-                            obj.speed_limit = speedLimit
+                        let obj = { address: {}, coordinates: [long, lat], country: '', speed_limit: '0', updated_at: new Date() }
+                        obj.address.formatted = results.formatted_address
+                        results.address_components.forEach(function (component) {
+                            obj.address[component.types[0]] = { 'short_name': component.short_name, 'long_name': component.long_name }
+                        })
+                        obj.country = obj.address.country.long_name
+
+                        if (roadData.json.speedLimits) {
+                            obj.speed_limit = roadData.json.speedLimits[0].speedLimit
                         }
                         storeMapsData(obj).then(data => { console.log(data) }).catch(err => { console.log(err) })
                         resolve([obj])
